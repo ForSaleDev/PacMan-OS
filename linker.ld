@@ -2,10 +2,10 @@ ENTRY(_start)
 
 SECTIONS
 {
-    . = 0x100000;
+    . = 0x200000;  /* 2MB, standard for 64-bit kernels */
 
     .text : {
-        *(.multiboot)
+        *(.multiboot2)
         *(.text*)
     }
 
@@ -19,5 +19,9 @@ SECTIONS
 
     .bss : {
         *(.bss*)
+        *(COMMON)
     }
+
+    /* Add alignment for 64-bit */
+    . = ALIGN(4096);
 }

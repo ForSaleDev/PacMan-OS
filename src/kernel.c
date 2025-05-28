@@ -1,10 +1,11 @@
-__attribute__((section(".multiboot")))
+__attribute__((section(".multiboot2")))
 const unsigned int multiboot_header[] = {
     0x1BADB002, // Multiboot magic number
     0x00,       // Flags (none)
     -(0x1BADB002) // Checksum (negates magic+flags)
 };
 
+#include "types.h"
 #include "vga.h"
 #include "keyboard.h"
 
@@ -17,16 +18,16 @@ const unsigned int multiboot_header[] = {
 #define DEMON 'X'
 
 char board[HEIGHT][WIDTH];
-int pacman_x, pacman_y;
-int score = 0;
-int food = 0;
-int res = 0;
+int64_t pacman_x, pacman_y;
+int64_t score = 0;
+int64_t food = 0;
+int64_t res = 0;
 
-unsigned int seed = 1337;
+uint64_t seed = 1337;
 // Minimal PRNG, safe for bare-metal
-int rand() {
+int64_t rand() {
     seed = (1103515245 * seed + 12345) & 0x7fffffff;
-    return seed;
+    return (int64_t)seed;
 }
 
 void initialize() {
@@ -113,10 +114,18 @@ void move(int dx, int dy) {
         res = 2;
 }
 
+void _start() __attribute__((naked));
 void _start() {
-    initialize();
-    draw();
+    // Set up stack for 64-bit
+    asm volatile (
+        "mov $0x200000, %rsp\n"  // Set stack pointer to 2MB
+        "call initialize\n"
+        "call draw\n"
+        "jmp main_loop\n"
+    );
+}
 
+void main_loop() {
     while (1) {
         char key = get_key();
 
